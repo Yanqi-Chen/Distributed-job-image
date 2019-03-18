@@ -40,6 +40,7 @@
 FROM nvidia/cuda@sha256:40db1c98b66e133f54197ba1a66312b9c29842635c8cba5ae66fb56ded695b7c
 
 ENV HADOOP_VERSION=2.7.2
+ENV NCCL_VERSION=2.4.2-1+cuda9.0
 LABEL HADOOP_VERSION=2.7.2
 
 RUN sed -i 's/http:\/\/archive\.ubuntu\.com\/ubuntu\//http:\/\/mirrors\.tuna\.tsinghua\.edu\.cn\/ubuntu\//g' /etc/apt/sources.list
@@ -63,6 +64,8 @@ RUN DEBIAN_FRONTEND=noninteractive && \
         openjdk-8-jdk \
         openssh-server \
         openssh-client \
+        libnccl2=${NCCL_VERSION} \
+        libnccl-dev=${NCCL_VERSION} \
         vim \
         lsof \
         libcupti-dev && \
@@ -118,6 +121,9 @@ RUN wget --quiet https://repo.continuum.io/archive/Anaconda3-2018.12-Linux-x86_6
     conda create -n pytorch_env pytorch torchvision cudatoolkit=9.0 -c pytorch && \
     conda create -n tensorflow_env tensorflow-gpu
     # TODO: Support more frameworks in the future.
+
+# Set default NCCL parameters
+RUN echo NCCL_DEBUG=INFO >> /etc/nccl.conf
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 
