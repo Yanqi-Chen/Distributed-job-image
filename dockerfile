@@ -32,18 +32,16 @@
 
 
 # Tag: nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
-# Label: com.nvidia.cuda.version: 9.0.176
-# Label: com.nvidia.cudnn.version: 7.1.2.21
 # Label: com.nvidia.volumes.needed: nvidia_driver
 # Label: maintainer: NVIDIA CORPORATION <cudatools@nvidia.com>
 # Ubuntu 16.04
-FROM nvidia/cuda@sha256:40db1c98b66e133f54197ba1a66312b9c29842635c8cba5ae66fb56ded695b7c
+FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
 ENV HADOOP_VERSION=2.7.2
 ENV NCCL_VERSION=2.4.2-1+cuda9.0
 LABEL HADOOP_VERSION=2.7.2
 
-RUN sed -i 's/http:\/\/archive\.ubuntu\.com\/ubuntu\//http:\/\/mirrors\.tuna\.tsinghua\.edu\.cn\/ubuntu\//g' /etc/apt/sources.list
+RUN sed -i 's/http:\/\/archive\.ubuntu\.com\/ubuntu\//https:\/\/mirrors\.tuna\.tsinghua\.edu\.cn\/ubuntu\//g' /etc/apt/sources.list
 
 RUN DEBIAN_FRONTEND=noninteractive && \
     apt-get -y update && \
@@ -109,18 +107,22 @@ RUN if ! wget -q -O docker.tgz "https://download.docker.com/linux/static/${DOCKE
 
 COPY modprobe.sh /usr/local/bin/modprobe
 COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod a+x /usr/local/bin/docker-entrypoint.sh
+COPY disthelper /root/disthelper
+RUN chmod a+x /usr/local/bin/docker-entrypoint.sh && \
+    chmod -R a+x /root/disthelper && \
+    echo "export PYTHONPATH=/root/disthelper:$PYTHONPATH" >> $HOME/.bashrc
 
-RUN wget --quiet https://repo.continuum.io/archive/Anaconda3-2018.12-Linux-x86_64.sh -O ~/anaconda.sh && \
-    /bin/bash ~/anaconda.sh -b -p /root/conda && \
-    rm ~/anaconda.sh && \
-    echo "export PATH=/root/conda/bin:$PATH" >> ~/.bashrc && \
-    conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/ && \
-    conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/ && \
-    conda config --set show_channel_urls yes && \
-    conda create -n pytorch_env pytorch torchvision cudatoolkit=9.0 -c pytorch && \
-    conda create -n tensorflow_env tensorflow-gpu
-    # TODO: Support more frameworks in the future.
+# RUN wget --quiet https://repo.continuum.io/archive/Anaconda3-2018.12-Linux-x86_64.sh -O $HOME/anaconda.sh && \
+#     /bin/bash $HOME/anaconda.sh -b -p /root/conda && \
+#     rm $HOME/anaconda.sh && \
+#     echo "export PATH=/root/conda/bin:$PATH" >> $HOME/.bashrc && \
+#     export PATH=/root/conda/bin:$PATH && \
+#     conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/ && \
+#     conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/ && \
+#     conda config --set show_channel_urls yes && \
+#     conda create -n pytorch_env pytorch torchvision cudatoolkit=9.0 -c pytorch && \
+#     conda create -n tensorflow_env tensorflow-gpu cudatoolkit=9.0
+#     # TODO: Support more frameworks in the future.
 
 # Set default NCCL parameters
 RUN echo NCCL_DEBUG=INFO >> /etc/nccl.conf
